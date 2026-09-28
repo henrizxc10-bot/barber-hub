@@ -6,7 +6,7 @@ import { PublicLayout } from "@/components/site/PublicLayout";
 import { ServiceCard } from "@/components/site/ServiceCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { servicesQuery, settingsQuery } from "@/lib/api";
+import { barbersQuery, servicesQuery, settingsQuery } from "@/lib/api";
 
 import hero from "@/assets/hero-barbearia.jpg";
 
@@ -37,6 +37,7 @@ const STEPS = [
 ];
 
 function Home() {
+  const barbers = useQuery(barbersQuery);
   const services = useQuery(servicesQuery);
   const settings = useQuery(settingsQuery);
 
@@ -68,7 +69,7 @@ function Home() {
           <dl className="mt-14 grid max-w-2xl grid-cols-2 gap-6 sm:grid-cols-3">
             <div>
               <dt className="text-xs uppercase tracking-widest text-muted-foreground">Barbeiros</dt>
-              <dd className="font-display text-3xl text-primary">2</dd>
+              <dd className="font-display text-3xl text-primary">{barbers.data?.length ?? 5}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-widest text-muted-foreground">Serviços</dt>
