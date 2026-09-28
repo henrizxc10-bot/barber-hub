@@ -22,6 +22,7 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BarbeirosLoginRoute = BarbeirosLoginRouteImport.update({ id: '/barbeiros/login', path: '/barbeiros/login', getParentRoute: () => rootRouteImport } as any)
 const BarbeirosRoute = BarbeirosRouteImport.update({
   id: '/barbeiros',
   path: '/barbeiros',
@@ -40,6 +41,8 @@ const DashboardRoute = DashboardRouteImport.update({ id: '/dashboard', path: '/d
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/barbeiros': typeof BarbeirosRoute
+  '/barbeiros/login': typeof BarbeirosLoginRoute
+  '/barbeiros/login': typeof BarbeirosLoginRoute
   '/servicos': typeof ServicosRoute
   '/login': typeof LoginRoute
   '/agendamento': typeof AgendamentoRoute
@@ -65,15 +68,16 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/barbeiros' | '/servicos' | '/login' | '/agendamento' | '/dashboard'
+  fullPaths: '/' | '/barbeiros' | '/barbeiros/login' | '/servicos' | '/login' | '/agendamento' | '/dashboard' | '/admin'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/barbeiros' | '/servicos' | '/login' | '/agendamento' | '/dashboard'
-  id: '__root__' | '/' | '/barbeiros' | '/servicos' | '/login' | '/agendamento' | '/dashboard'
+  to: '/' | '/barbeiros' | '/barbeiros/login' | '/servicos' | '/login' | '/agendamento' | '/dashboard' | '/admin'
+  id: '__root__' | '/' | '/barbeiros' | '/barbeiros/login' | '/servicos' | '/login' | '/agendamento' | '/dashboard' | '/admin'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BarbeirosRoute: typeof BarbeirosRoute
+  BarbeirosLoginRoute: typeof BarbeirosLoginRoute
   ServicosRoute: typeof ServicosRoute
   LoginRoute: typeof LoginRoute
   AgendamentoRoute: typeof AgendamentoRoute
@@ -90,6 +94,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/barbeiros/login': { id: '/barbeiros/login', path: '/barbeiros/login', fullPath: '/barbeiros/login', preLoaderRoute: typeof BarbeirosLoginRouteImport, parentRoute: typeof rootRouteImport }
     '/barbeiros': {
       id: '/barbeiros'
       path: '/barbeiros'
@@ -119,6 +124,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BarbeirosRoute: BarbeirosRoute,
+  BarbeirosLoginRoute: BarbeirosLoginRoute,
   ServicosRoute: ServicosRoute,
   LoginRoute: LoginRoute,
   AgendamentoRoute: AgendamentoRoute,
