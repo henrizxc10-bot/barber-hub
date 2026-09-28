@@ -221,3 +221,36 @@ export const cancelAppointment = createServerFn({ method: "POST" })
 
     return { ok: true as const };
   });
+\n\nimport { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+export const updateProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      fullName: z.string().trim().min(2).max(120),
+      phone: z.string().trim().min(8).max(30),
+      cpf: z.string().trim().max(14).optional(),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        full_name: data.fullName,
+        phone: data.phone,
+        cpf: data.cpf || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    if (error) {
+      return { ok: false as const, message: "Não foi possível atualizar seu perfil." };
+    }
+
+    return { ok: true as const };
+  });
