@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, CheckCircle2, Clock3, Loader2, LogOut, Scissors, Users } from "lucide-react";
@@ -58,7 +58,7 @@ function AdminPage() {
     setLoaded(true);
   };
 
-  useMemo(() => {
+  useEffect(() => {
     if (!loading && !isAuthenticated) void navigate({ to: "/login" });
     if (isAuthenticated && !loaded) void load();
   }, [loading, isAuthenticated, loaded]);
