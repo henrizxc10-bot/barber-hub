@@ -8,7 +8,6 @@ import {
   History,
   Loader2,
   LogOut,
-  Scissors,
   UserRound,
   XCircle,
 } from "lucide-react";
