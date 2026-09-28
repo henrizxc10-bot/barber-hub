@@ -14,6 +14,7 @@ import { Route as BarbeirosRouteImport } from './routes/barbeiros'
 import { Route as ServicosRouteImport } from './routes/servicos'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AgendamentoRouteImport } from './routes/agendamento'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -32,6 +33,7 @@ const ServicosRoute = ServicosRouteImport.update({
 } as any)
 const LoginRoute = LoginRouteImport.update({ id: '/login', path: '/login', getParentRoute: () => rootRouteImport } as any)
 const AgendamentoRoute = AgendamentoRouteImport.update({ id: '/agendamento', path: '/agendamento', getParentRoute: () => rootRouteImport } as any)
+const DashboardRoute = DashboardRouteImport.update({ id: '/dashboard', path: '/dashboard', getParentRoute: () => rootRouteImport } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -39,6 +41,7 @@ export interface FileRoutesByFullPath {
   '/servicos': typeof ServicosRoute
   '/login': typeof LoginRoute
   '/agendamento': typeof AgendamentoRoute
+  '/dashboard': typeof DashboardRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -46,6 +49,7 @@ export interface FileRoutesByTo {
   '/servicos': typeof ServicosRoute
   '/login': typeof LoginRoute
   '/agendamento': typeof AgendamentoRoute
+  '/dashboard': typeof DashboardRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -54,13 +58,14 @@ export interface FileRoutesById {
   '/servicos': typeof ServicosRoute
   '/login': typeof LoginRoute
   '/agendamento': typeof AgendamentoRoute
+  '/dashboard': typeof DashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/barbeiros' | '/servicos' | '/login' | '/agendamento'
+  fullPaths: '/' | '/barbeiros' | '/servicos' | '/login' | '/agendamento' | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/barbeiros' | '/servicos' | '/login' | '/agendamento'
-  id: '__root__' | '/' | '/barbeiros' | '/servicos' | '/login' | '/agendamento'
+  to: '/' | '/barbeiros' | '/servicos' | '/login' | '/agendamento' | '/dashboard'
+  id: '__root__' | '/' | '/barbeiros' | '/servicos' | '/login' | '/agendamento' | '/dashboard'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -69,6 +74,7 @@ export interface RootRouteChildren {
   ServicosRoute: typeof ServicosRoute
   LoginRoute: typeof LoginRoute
   AgendamentoRoute: typeof AgendamentoRoute
+  DashboardRoute: typeof DashboardRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -96,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -105,6 +118,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicosRoute: ServicosRoute,
   LoginRoute: LoginRoute,
   AgendamentoRoute: AgendamentoRoute,
+  DashboardRoute: DashboardRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
