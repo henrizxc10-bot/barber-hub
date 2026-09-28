@@ -14,6 +14,7 @@ import { Route as BarbeirosRouteImport } from './routes/barbeiros'
 import { Route as ServicosRouteImport } from './routes/servicos'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AgendamentoRouteImport } from './routes/agendamento'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 
 const IndexRoute = IndexRouteImport.update({
@@ -33,6 +34,7 @@ const ServicosRoute = ServicosRouteImport.update({
 } as any)
 const LoginRoute = LoginRouteImport.update({ id: '/login', path: '/login', getParentRoute: () => rootRouteImport } as any)
 const AgendamentoRoute = AgendamentoRouteImport.update({ id: '/agendamento', path: '/agendamento', getParentRoute: () => rootRouteImport } as any)
+const AdminRoute = AdminRouteImport.update({ id: '/admin', path: '/admin', getParentRoute: () => rootRouteImport } as any)
 const DashboardRoute = DashboardRouteImport.update({ id: '/dashboard', path: '/dashboard', getParentRoute: () => rootRouteImport } as any)
 
 export interface FileRoutesByFullPath {
@@ -41,7 +43,8 @@ export interface FileRoutesByFullPath {
   '/servicos': typeof ServicosRoute
   '/login': typeof LoginRoute
   '/agendamento': typeof AgendamentoRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard' | '/admin': typeof DashboardRoute
+  '/admin': typeof AdminRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,6 +78,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   AgendamentoRoute: typeof AgendamentoRoute
   DashboardRoute: typeof DashboardRoute
+  AdminRoute: typeof AdminRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -119,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   AgendamentoRoute: AgendamentoRoute,
   DashboardRoute: DashboardRoute,
+  AdminRoute: AdminRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
