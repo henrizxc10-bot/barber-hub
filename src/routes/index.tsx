@@ -2,12 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CalendarCheck, Clock, MapPin, ShieldCheck, Sparkles, Star } from "lucide-react";
 
-import { BarberCard } from "@/components/site/BarberCard";
 import { PublicLayout } from "@/components/site/PublicLayout";
 import { ServiceCard } from "@/components/site/ServiceCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { barbersQuery, servicesQuery, settingsQuery } from "@/lib/api";
+import { servicesQuery, settingsQuery } from "@/lib/api";
 
 import hero from "@/assets/hero-barbearia.jpg";
 
@@ -39,7 +38,6 @@ const STEPS = [
 
 function Home() {
   const services = useQuery(servicesQuery);
-  const barbers = useQuery(barbersQuery);
   const settings = useQuery(settingsQuery);
 
   return (
@@ -70,7 +68,7 @@ function Home() {
           <dl className="mt-14 grid max-w-2xl grid-cols-2 gap-6 sm:grid-cols-3">
             <div>
               <dt className="text-xs uppercase tracking-widest text-muted-foreground">Barbeiros</dt>
-              <dd className="font-display text-3xl text-primary">{barbers.data?.length ?? 5}</dd>
+              <dd className="font-display text-3xl text-primary">2</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-widest text-muted-foreground">Serviços</dt>
@@ -121,22 +119,6 @@ function Home() {
             )}
             {services.data?.slice(0, 6).map((s) => <ServiceCard key={s.id} service={s} />)}
           </div>
-        </div>
-      </section>
-
-      <section className="container-page py-20">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="eyebrow">Equipe</p>
-            <h2 className="mt-3 text-4xl">Conheça seu barbeiro</h2>
-          </div>
-          <Button asChild variant="outline">
-            <Link to="/barbeiros">Ver equipe</Link>
-          </Button>
-        </div>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {barbers.isLoading && Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-80 rounded-xl" />)}
-          {barbers.data?.slice(0, 3).map((b) => <BarberCard key={b.id} barber={b} />)}
         </div>
       </section>
 
