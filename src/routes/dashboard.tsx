@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -119,7 +119,7 @@ function DashboardPage() {
     }
   }
 
-  async function handleProfileSave(event: React.FormEvent<HTMLFormElement>) {
+  async function handleProfileSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSavingProfile(true);
     try {
