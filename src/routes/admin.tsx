@@ -41,6 +41,8 @@ function AdminPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [authorized, setAuthorized] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const barbers = useQuery(barbersQuery);
   const services = useQuery(servicesQuery);
 
@@ -59,9 +61,38 @@ function AdminPage() {
   };
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) void navigate({ to: "/login" });
-    if (isAuthenticated && !loaded) void load();
-  }, [loading, isAuthenticated, loaded]);
+    let active = true;
+    async function checkAccess() {
+      if (loading) return;
+      if (!isAuthenticated || !user) {
+        if (active) {
+          setCheckingAccess(false);
+          await navigate({ to: "/barbeiros/login", replace: true });
+        }
+        return;
+      }
+
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (!active) return;
+      if (!data) {
+        setCheckingAccess(false);
+        await navigate({ to: "/barbeiros/login", replace: true });
+        return;
+      }
+
+      setAuthorized(true);
+      setCheckingAccess(false);
+      if (!loaded) void load();
+    }
+    void checkAccess();
+    return () => { active = false; };
+  }, [loading, isAuthenticated, user, loaded, navigate]);
 
   const filtered = statusFilter === "todos" ? appointments : appointments.filter((item) => item.status === statusFilter);
   const today = new Date().toDateString();
@@ -88,7 +119,7 @@ function AdminPage() {
     await navigate({ to: "/" });
   }
 
-  if (loading || !isAuthenticated) {
+  if (loading || checkingAccess || !authorized) {
     return <PublicLayout><div className="container-page py-20 text-center"><Loader2 className="mx-auto size-6 animate-spin text-primary" /></div></PublicLayout>;
   }
 
