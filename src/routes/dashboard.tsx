@@ -16,9 +16,9 @@ import { toast } from "sonner";
 import { PageHeader, PublicLayout } from "@/components/site/PublicLayout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { myAppointmentsQuery, profileQuery } from "@/lib/api";
+import { myAppointmentsQuery, notificationsQuery, profileQuery } from "@/lib/api";
 import { STATUS_LABEL, canCancel } from "@/lib/booking";
-import { cancelAppointment, updateProfile } from "@/lib/appointments.functions";
+import { cancelAppointment, rescheduleAppointment, updateProfile } from "@/lib/appointments.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/dashboard")({
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
 });
 
-type Tab = "proximos" | "historico" | "perfil";
+type Tab = "proximos" | "historico" | "perfil" | "notificacoes";
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "full",
@@ -55,10 +55,12 @@ function DashboardPage() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const appointments = useQuery(myAppointmentsQuery(user?.id));
+  const notifications = useQuery(notificationsQuery(user?.id));
   const profile = useQuery(profileQuery(user?.id));
   const [tab, setTab] = useState<Tab>("proximos");
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [cpf, setCpf] = useState("");
@@ -115,6 +117,23 @@ function DashboardPage() {
       toast.error(error instanceof Error ? error.message : "Não foi possível cancelar.");
     } finally {
       setCancellingId(null);
+    }
+  }
+
+  async function handleReschedule(id: string, startsAt: string) {
+    setReschedulingId(id);
+    try {
+      const result = await rescheduleAppointment({ data: { id, startsAt: new Date(startsAt).toISOString() } });
+      if (!result.ok) throw new Error(result.message);
+      toast.success("Agendamento reagendado.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["my-appointments", user?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] }),
+      ]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível reagendar.");
+    } finally {
+      setReschedulingId(null);
     }
   }
 
@@ -191,6 +210,7 @@ function DashboardPage() {
             {([
               ["proximos", "Próximos", CalendarDays],
               ["historico", "Histórico", History],
+              ["notificacoes", "Notificações", Bell],
               ["perfil", "Meu perfil", UserRound],
             ] as const).map(([value, label, Icon]) => (
               <button
@@ -213,7 +233,33 @@ function DashboardPage() {
           </nav>
 
           <section className="min-w-0">
-            {tab === "perfil" ? (
+            {tab === "notificacoes" ? (
+              <div className="space-y-5">
+                <div>
+                  <p className="eyebrow">Central</p>
+                  <h2 className="mt-2 text-2xl">Notificações</h2>
+                </div>
+                {(notifications.data ?? []).length === 0 ? (
+                  <div className="panel p-10 text-center text-sm text-muted-foreground">Você ainda não tem notificações.</div>
+                ) : (
+                  (notifications.data ?? []).map((item) => (
+                    <article key={item.id} className={`panel p-5 ${item.read ? "" : "border-primary/40"}`}>
+                      <div className="flex gap-4">
+                        <Bell className="mt-1 size-5 text-primary" />
+                        <div className="min-w-0">
+                          <div className="flex items-center justify-between gap-3">
+                            <h3 className="font-semibold">{item.title}</h3>
+                            {!item.read && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] text-primary-foreground">Nova</span>}
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
+                          <p className="mt-2 text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString("pt-BR")}</p>
+                        </div>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+            ) : tab === "perfil" ? (
               <form onSubmit={handleProfileSave} className="panel p-6 sm:p-8">
                 <div className="mb-7">
                   <p className="eyebrow">Dados pessoais</p>
@@ -357,25 +403,33 @@ function DashboardPage() {
                         )}
 
                         {tab === "proximos" && (
-                          <div className="mt-5 flex flex-wrap gap-3">
+                          <div className="mt-5 flex flex-wrap items-center gap-3">
                             {canCancelAppointment ? (
                               <Button
                                 variant="outline"
                                 disabled={cancellingId === appointment.id}
                                 onClick={() => void handleCancel(appointment.id)}
                               >
-                                {cancellingId === appointment.id ? (
-                                  <Loader2 className="mr-2 size-4 animate-spin" />
-                                ) : (
-                                  <XCircle className="mr-2 size-4" />
-                                )}
+                                {cancellingId === appointment.id ? <Loader2 className="mr-2 size-4 animate-spin" /> : <XCircle className="mr-2 size-4" />}
                                 Cancelar horário
                               </Button>
                             ) : (
-                              <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <CheckCircle2 className="size-4" />
-                                Este horário já está dentro do período sem cancelamento.
-                              </p>
+                              <p className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle2 className="size-4" /> Cancelamento indisponível para este horário.</p>
+                            )}
+                            {canCancelAppointment && (
+                              <label className="flex items-center gap-2 text-sm">
+                                <span className="sr-only">Novo horário</span>
+                                <input
+                                  type="datetime-local"
+                                  defaultValue={new Date(new Date(appointment.starts_at).getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+                                  disabled={reschedulingId === appointment.id}
+                                  className="h-10 rounded-md border border-input bg-background px-3"
+                                  onChange={(event) => {
+                                    if (event.target.value) void handleReschedule(appointment.id, event.target.value);
+                                  }}
+                                />
+                                {reschedulingId === appointment.id && <Loader2 className="size-4 animate-spin" />}
+                              </label>
                             )}
                           </div>
                         )}
