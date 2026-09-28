@@ -251,3 +251,138 @@ export const updateProfile = createServerFn({ method: "POST" })
 
     return { ok: true as const };
   });
+
+
+export const rescheduleAppointment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      startsAt: z.string().min(10),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: appt } = await supabase
+      .from("appointments")
+      .select("id,customer_id,barber_id,service_id,starts_at,status")
+      .eq("id", data.id)
+      .single();
+
+    if (!appt || appt.customer_id !== userId) {
+      return { ok: false as const, message: "Agendamento não encontrado." };
+    }
+    if (appt.status !== "confirmado" && appt.status !== "aguardando") {
+      return { ok: false as const, message: "Este agendamento não pode ser reagendado." };
+    }
+
+    const startsAt = new Date(data.startsAt);
+    if (Number.isNaN(startsAt.getTime()) || startsAt.getTime() <= Date.now()) {
+      return { ok: false as const, message: "Escolha um horário futuro." };
+    }
+
+    const [{ data: service }, { data: settings }, { data: schedule }, { data: hours }] = await Promise.all([
+      supabase.from("services").select("id,duration_minutes,name").eq("id", appt.service_id).single(),
+      supabase.from("settings").select("buffer_minutes,min_hours_ahead,max_days_ahead").eq("id", 1).single(),
+      supabase.from("barber_schedules").select("works,starts_at,ends_at").eq("barber_id", appt.barber_id).eq("weekday", startsAt.getDay()).maybeSingle(),
+      supabase.from("business_hours").select("is_open,opens_at,closes_at").eq("weekday", startsAt.getDay()).maybeSingle(),
+    ]);
+
+    if (!service) return { ok: false as const, message: "Serviço não encontrado." };
+    const minHours = settings?.min_hours_ahead ?? 2;
+    const maxDays = settings?.max_days_ahead ?? 60;
+    const hoursAhead = (startsAt.getTime() - Date.now()) / 3_600_000;
+    if (hoursAhead < minHours) return { ok: false as const, message: `Escolha um horário com pelo menos ${minHours}h de antecedência.` };
+    if (hoursAhead / 24 > maxDays) return { ok: false as const, message: `O novo horário deve estar dentro dos próximos ${maxDays} dias.` };
+
+    const endsAt = new Date(startsAt.getTime() + service.duration_minutes * 60_000);
+    const startMinute = startsAt.getHours() * 60 + startsAt.getMinutes();
+    const endMinute = startMinute + service.duration_minutes;
+    if (!hours?.is_open || startMinute < timeStringToMinutes(hours.opens_at) || endMinute > timeStringToMinutes(hours.closes_at)) {
+      return { ok: false as const, message: "Esse horário está fora do expediente." };
+    }
+    if (schedule && (!schedule.works || startMinute < timeStringToMinutes(schedule.starts_at) || endMinute > timeStringToMinutes(schedule.ends_at))) {
+      return { ok: false as const, message: "O barbeiro não atende nesse horário." };
+    }
+
+    const buffer = settings?.buffer_minutes ?? 0;
+    const bufferedStart = startsAt.getTime() - buffer * 60_000;
+    const bufferedEnd = endsAt.getTime() + buffer * 60_000;
+    const { data: conflicts } = await supabase
+      .from("appointments")
+      .select("id,starts_at,ends_at")
+      .eq("barber_id", appt.barber_id)
+      .neq("id", appt.id)
+      .in("status", ["aguardando", "confirmado", "em_atendimento"])
+      .lt("starts_at", new Date(endsAt.getTime() + buffer * 60_000).toISOString())
+      .gt("ends_at", new Date(startsAt.getTime() - buffer * 60_000).toISOString());
+
+    if ((conflicts ?? []).some((item) => bufferedStart < new Date(item.ends_at).getTime() && new Date(item.starts_at).getTime() < bufferedEnd)) {
+      return { ok: false as const, message: "Esse horário já está ocupado. Escolha outro." };
+    }
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", appt.id);
+
+    if (error) return { ok: false as const, message: "Não foi possível reagendar agora." };
+
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      title: "Agendamento reagendado",
+      body: `${service.name} foi reagendado para ${startsAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}.`,
+      kind: "reagendamento",
+    });
+
+    return { ok: true as const, startsAt: startsAt.toISOString() };
+  });
+
+export const updateAppointmentStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      status: z.enum(["aguardando", "confirmado", "em_atendimento", "concluido", "cancelado", "nao_compareceu"]),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: role } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!role) return { ok: false as const, message: "Acesso restrito ao administrador." };
+
+    const { data: appointment } = await supabase
+      .from("appointments")
+      .select("id,customer_id")
+      .eq("id", data.id)
+      .single();
+    if (!appointment) return { ok: false as const, message: "Agendamento não encontrado." };
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status: data.status, updated_at: new Date().toISOString() })
+      .eq("id", data.id);
+
+    if (error) return { ok: false as const, message: "Não foi possível atualizar o status." };
+
+    if (appointment.customer_id) {
+      await supabase.from("notifications").insert({
+        user_id: appointment.customer_id,
+        title: "Status do agendamento atualizado",
+        body: `Seu agendamento agora está como: ${data.status}.`,
+        kind: "status",
+      });
+    }
+
+    return { ok: true as const };
+  });
