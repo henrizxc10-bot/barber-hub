@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BarbeirosRouteImport } from './routes/barbeiros'
+import { Route as BarbeirosLoginRouteImport } from './routes/barbeiros.login'
 import { Route as ServicosRouteImport } from './routes/servicos'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AgendamentoRouteImport } from './routes/agendamento'
@@ -42,7 +43,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/barbeiros': typeof BarbeirosRoute
   '/barbeiros/login': typeof BarbeirosLoginRoute
-  '/barbeiros/login': typeof BarbeirosLoginRoute
   '/servicos': typeof ServicosRoute
   '/login': typeof LoginRoute
   '/agendamento': typeof AgendamentoRoute
@@ -52,15 +52,18 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/barbeiros': typeof BarbeirosRoute
+  '/barbeiros/login': typeof BarbeirosLoginRoute
   '/servicos': typeof ServicosRoute
   '/login': typeof LoginRoute
   '/agendamento': typeof AgendamentoRoute
   '/dashboard': typeof DashboardRoute
+  '/admin': typeof AdminRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/barbeiros': typeof BarbeirosRoute
+  '/barbeiros/login': typeof BarbeirosLoginRoute
   '/servicos': typeof ServicosRoute
   '/login': typeof LoginRoute
   '/agendamento': typeof AgendamentoRoute
