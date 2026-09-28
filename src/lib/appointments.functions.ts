@@ -221,10 +221,7 @@ export const cancelAppointment = createServerFn({ method: "POST" })
 
     return { ok: true as const };
   });
-\n\nimport { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const updateProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
