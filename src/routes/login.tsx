@@ -36,7 +36,7 @@ function LoginPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Login realizado.");
-        await navigate({ to: "/agendamento" });
+        await navigate({ to: "/dashboard" });
       } else {
         if (name.trim().length < 2) throw new Error("Informe seu nome.");
         if (phone.trim().length < 8) throw new Error("Informe um telefone válido.");
@@ -47,7 +47,7 @@ function LoginPage() {
         });
         if (error) throw error;
         if (!data.session) setCreated(true);
-        else await navigate({ to: "/agendamento" });
+        else await navigate({ to: "/dashboard" });
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível concluir.");
